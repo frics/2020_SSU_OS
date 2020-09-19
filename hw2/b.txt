@@ -1,0 +1,14 @@
+a.out  
+abc.txt   
+b.txt    
+ori        
+pipe    
+ssu_shell.c  
+test.c
+a.txt  
+abc2.txt  
+commands.txt  
+oriPipe.c  
+pipe.c  
+test
+
