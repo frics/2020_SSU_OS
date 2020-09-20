@@ -47,17 +47,17 @@ char **tokenize(char *line, int flag) {
 
 	free(token);
 	tokens[tokenNo] = NULL;
-/*
+	/*
 	//토큰 디버깅
 	if(flag==0)
-		printf("\nCheck Tokens : ");
+	printf("\nCheck Tokens : ");
 	else
-		printf("\nCheck Pipes : ");
+	printf("\nCheck Pipes : ");
 	for(i=0; tokens[i]!=NULL; i++){
-		printf("(%s)", tokens[i]);
+	printf("(%s)", tokens[i]);
 	}
 	printf("\n");
-	*/
+	 */
 	return tokens;
 }
 
@@ -92,15 +92,15 @@ int main(int argc, char *argv[]) {
 		bzero(line, sizeof(line));
 		cmd_cnt=1;
 
-		//배치 모드일 경우
-		if (argc == 2) {                               // batch mode
+		//batch mode일 경우
+		if (argc == 2) {
 			if (fgets(line, sizeof(line), fp) == NULL) { // file reading finished
 				break;
 			}
 			line[strlen(line) - 1] = '\0';
 		}
-		//반응형 모드
-		else { // interactive mode
+		//interactivie mode일 경우
+		else {
 			printf("$ ");
 			scanf("%[^\n]", line);
 			getchar();
@@ -109,11 +109,13 @@ int main(int argc, char *argv[]) {
 		if(strcmp(line, "")==0)
 			continue;
 
-		//PIPE Check
+		//Command Count Check
+		//'|' 기준으로 명령어 개수 카운트
 		for(i=0; i<strlen(line); i++){
 			if(line[i] == '|')
 				cmd_cnt++;
 		}
+
 		pipe_cnt = cmd_cnt-1;
 		printf("**********************\nCommands : %d\nPipes :%d\n**********\n", cmd_cnt, pipe_cnt);
 
@@ -121,24 +123,25 @@ int main(int argc, char *argv[]) {
 		//command : 잘린 명령어 실행을 위해 선언
 		commands = tokenize(line, 1);
 
+		//파이프 개수만큼 fd[2] 배열 생성
 		int fds[pipe_cnt][2];
 
-		/*파이프 전체 생성
-		  for(i=0; i<(2*pipe_cnt); i+=2){
-		  if(pipe(fds+i) == -1)
-		  printf("파이프 생성 실패\n");
-		  }*/
 
-		int p=0;
 		//명령어 개수만큼 반복문 돌려서 실행
 		for(i=0; i<cmd_cnt; i++){
 			command = tokenize(commands[i], 0);
-			if(pipe_cnt>0 && pipe(fds[i]))
-				printf("파이프 생성 실패\n");
 
+			//pipe가 존재하고 마지막 명령어가 아닌 경우 
+			//파이프 생성
+			if(pipe_cnt>0 && i<pipe_cnt){ 
+				if(pipe(fds[i]))
+					printf("파이프 생성 실패\n");
+				else
+					printf("파이프 생성 성공\n");
+			}
 			//명령어 만큼 프로세스 생성
 			pid = fork();
-		
+
 
 			//명령어 실행을 위해 i번째 명령어 실행
 
@@ -147,8 +150,9 @@ int main(int argc, char *argv[]) {
 					printf("FORK FAIL\n");
 					break;
 				case 0 :
-					//첫번째 파이프
-					if(cmd_cnt > 1){
+					printf("FORK SUCCESS\n");
+					if(pipe_cnt > 0 && i < pipe_cnt){
+						//첫번째 파이프
 						if(i == 0){
 							printf("Is first cmd\n");
 							close(fds[i][INPUT]);
@@ -159,7 +163,9 @@ int main(int argc, char *argv[]) {
 							printf("Is last pipe cmd\n");
 							close(fds[i][OUTPUT]);
 							dup2(fds[i][INPUT], STDIN_FILENO);
+							wait(&status);
 						}
+
 						//중간 파이프
 						else{
 							printf("middle pipe\n");
@@ -168,7 +174,7 @@ int main(int argc, char *argv[]) {
 						}
 					}
 
-			
+
 					printf("pid(%d) : %s %s\n", getpid(), command[0], command[1]);
 					execvp(command[0], command);
 					printf("잘못된 명령어입니다.\n");
@@ -176,19 +182,22 @@ int main(int argc, char *argv[]) {
 					break;
 
 				default:
+					/*
+					   for(j=0; j<pipe_cnt; j++){
+					   if(close(fds[j][0])== -1 || close(fds[j][1] == -1))
+					   printf("FUCKING PIPE CLOSE ERROR\n");
+					   }*/
 					for(j=0; j<cmd_cnt; j++){
 						printf("waiting..... pid : %d\n", getpid());
 						wait(&status);
-						close(fds[j][OUTPUT]);
-						close(fds[j][INPUT]);
-						if(status == -1)
-							printf("fuck u\n");
+						if(j!=pipe_cnt){
+							close(fds[j][OUTPUT]);
+							close(fds[j][INPUT]);
+						}
 					}
 					break;
 			}
-
 		}
-		
 		freeToken(command);
 		freeToken(commands);
 	}
