@@ -61,10 +61,8 @@ char **tokenize(char *line, int flag) {
 	return tokens;
 }
 
-
 void freeToken(char **tokens){
 	for(int i =0; tokens[i]!= NULL; i++){
-		//	free(tokens[i]);
 		tokens[i] = '\0';
 	}
 	free(tokens);
@@ -73,10 +71,8 @@ void executeCommand(char **commands, int cmd_cnt){
 
 	int fd[2];
 	int fd_next;
-	int i;
-	int pipe_cnt = cmd_cnt -1;
 	char **command;
-	for(i=0; i<cmd_cnt; i++){
+	for(int i=0; i<cmd_cnt; i++){
 		if(cmd_cnt>1)
 			pipe(fd);
 		command = tokenize(commands[i], 0);
@@ -92,18 +88,21 @@ void executeCommand(char **commands, int cmd_cnt){
 					if(commands[i+1] != NULL)
 						dup2(fd[1], 1);
 					close(fd[0]);
+					close(fd[1]);
 				}
 				execvp(command[0], command);
 				printf("잘못된 명령어입니다.\n");
 				exit(1);
 				break;
 			default:
-				wait(NULL);
-				close(fd[1]);
-				fd_next = fd[0];
+				if(cmd_cnt>1){
+					close(fd[1]);
+					fd_next = fd[0];
+				}
 				break;
 		}
 	}
+	while(wait(NULL)>0);
 }
 int main(int argc, char *argv[]) {
 	int cmd_cnt;
