@@ -84,7 +84,8 @@ void executeCommand(char **commands, int cmd_cnt){
 				if(cmd_cnt>1){
 					//prev fd를 복사해줌
 					dup2(fd_next, 0);
-					//다음 명령어가 없을때
+					//마지막 명령어가 아닐때
+					//dup2()로 출력을 연결해준다.
 					if(commands[i+1] != NULL)
 						dup2(fd[1], 1);
 					close(fd[0]);
