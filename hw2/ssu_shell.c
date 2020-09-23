@@ -3,17 +3,13 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include<wait.h>
+#include <wait.h>
 
 #define MAX_INPUT_SIZE 1024
 #define MAX_TOKEN_SIZE 64
 #define MAX_NUM_TOKENS 64
-#define INPUT 0
-#define OUTPUT 1
 
 /* Splits the string by space and returns the array of tokens
-   flag = 0 : 문자열을 공백으로 구분 -> 명령어 단어 별로 토큰화
-   flag = 1 : 문자열을 파이프로 구분 -> 명령어 별로 토큰화
  ********************/
 char **tokenize(char *line, int flag) {
 	char **tokens = (char **)malloc(MAX_NUM_TOKENS * sizeof(char *));
