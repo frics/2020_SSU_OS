@@ -21,9 +21,11 @@ char **tokenize(char *line, int flag) {
 	int i, tokenIndex = 0, tokenNo = 0;
 	char pipe_ch;
 
-	//개행 처리로 구분해줌
+	//명령어 개행 처리
 	line[strlen(line)] = '\n';
-
+	
+	//flag가 0이면 명령어 토큰화
+	//flag가 1이면 파이프 기준으로 토큰화
 	if(flag==0)
 		pipe_ch = ' ';
 	else
@@ -47,20 +49,10 @@ char **tokenize(char *line, int flag) {
 
 	free(token);
 	tokens[tokenNo] = NULL;
-	/*
-	//토큰 디버깅
-	if(flag==0)
-	printf("\nCheck Tokens : ");
-	else
-	printf("\nCheck Pipes : ");
-	for(i=0; tokens[i]!=NULL; i++){
-	printf("(%s)", tokens[i]);
-	}
-	printf("\n");
-	 */
 	return tokens;
 }
 
+//사용완료된 토큰 해제
 void freeToken(char **tokens){
 	for(int i =0; tokens[i]!= NULL; i++){
 		tokens[i] = '\0';
@@ -92,7 +84,7 @@ void executeCommand(char **commands, int cmd_cnt){
 					close(fd[1]);
 				}
 				execvp(command[0], command);
-				printf("잘못된 명령어입니다.\n");
+				printf("SSUSHELL : Incorrect command\n");
 				exit(1);
 				break;
 			default:
@@ -104,6 +96,7 @@ void executeCommand(char **commands, int cmd_cnt){
 		}
 	}
 	while(wait(NULL)>0);
+free(command);
 }
 int main(int argc, char *argv[]) {
 	int cmd_cnt;
