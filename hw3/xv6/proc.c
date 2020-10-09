@@ -93,8 +93,9 @@ found:
 	p->pid = nextpid++;
 	
 	/******add by me *****/
-	p->ctsw_cnt =0;
-	p->priority =0;
+	p->ctsw_cnt = 0;
+	p->priority = 100;
+	p->isRun =0;
 	/******add by me *****/
 
 	release(&ptable.lock);
@@ -327,7 +328,84 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
+
 void
+scheduler(void)
+{
+	struct proc *p;
+	//struct proc *p1;
+	struct proc *p2;
+	struct proc *tmp;
+	//int past;
+	struct cpu *c = mycpu();
+	c->proc = 0;
+
+	//int proc_num;
+	//int run_cnt;
+//	int i;
+	for(;;){
+		
+	//	run_cnt = 0;
+	//	proc_num = get_num_proc();
+		// Enable interrupts on this processor.
+		sti();
+		// Loop over process table looking for process to run.
+		acquire(&ptable.lock);
+
+		
+		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+			if(p->state != RUNNABLE)
+				continue;
+			tmp = p;
+			for(p2 = ptable.proc; p2 < &ptable.proc[NPROC]; p2++){
+				//if(p2->state != RUNNABLE || p2->isRun == 1 )
+				if(p2->state != RUNNABLE)
+					continue;
+				if(tmp->priority < p2->priority){
+					tmp = p2;
+				}
+			}
+			cprintf("%d is on\n", tmp->priority);
+			p = tmp;
+			//p->isRun = 1;
+			// Switch to chosen process.  It is the process's job
+			// to release ptable.lock and then reacquire it	
+			// before jumping back to us.
+			c->proc = p;
+
+			//유저한테 프로세스를 로드 
+			switchuvm(p);
+	
+			//프로세스 상태 변경
+			p->state = RUNNING;
+			
+			//프로세스를 실행할 수 있도록 switch
+			swtch(&(c->scheduler), p->context);
+		
+			//커널이 프로세스 메모리 로드
+			switchkvm();
+
+			//context switching 횟수 증가
+			p->ctsw_cnt++;
+	//		run_cnt++;
+			// Process is done running for now.
+			// It should have changed its p->state before coming back.
+			c->proc = 0;
+		//	for(i = proc_num-run_cnt; i>0; i--){
+//			for(i=0; i<(p->priority)*10; i++){
+//			}
+		}
+		/*
+		for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
+			if(p1->isRun == 1)
+				p1->isRun =0;
+		}*/
+		release(&ptable.lock);
+	}
+}
+/*
+	void
 scheduler(void)
 {
 	struct proc *p;
@@ -343,7 +421,7 @@ scheduler(void)
 		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 			if(p->state != RUNNABLE)
 				continue;
-
+			cprintf("%d choose \n", p->pid);
 			// Switch to chosen process.  It is the process's job
 			// to release ptable.lock and then reacquire it
 			// before jumping back to us.
@@ -355,9 +433,9 @@ scheduler(void)
 			swtch(&(c->scheduler), p->context);
 			switchkvm();
 
-			/******add by me *****/
-			//p->ctsw_cnt++;
-			/******add by me *****/
+			//	add by me 
+			p->ctsw_cnt++;
+			//	add by me 
 
 			// Process is done running for now.
 			// It should have changed its p->state before coming back.
@@ -367,7 +445,7 @@ scheduler(void)
 
 	}
 }
-
+*/
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this
@@ -391,9 +469,6 @@ sched(void)
 		panic("sched interruptible");
 	intena = mycpu()->intena;
 	swtch(&p->context, mycpu()->scheduler);
-			/******add by me *****/
-			p->ctsw_cnt++;
-			/******add by me *****/
 	mycpu()->intena = intena;
 }
 
@@ -470,7 +545,7 @@ sleep(void *chan, struct spinlock *lk)
 //PAGEBREAK!
 // Wake up all processes sleeping on chan.
 // The ptable lock must be held.
-	static void
+static void
 wakeup1(void *chan)
 {
 	struct proc *p;
@@ -481,7 +556,7 @@ wakeup1(void *chan)
 }
 
 // Wake up all processes sleeping on chan.
-	void
+void
 wakeup(void *chan)
 {
 	acquire(&ptable.lock);
@@ -492,7 +567,7 @@ wakeup(void *chan)
 // Kill the process with the given pid.
 // Process won't exit until it returns
 // to user space (see trap in trap.c).
-	int
+int
 kill(int pid)
 {
 	struct proc *p;
@@ -516,7 +591,7 @@ kill(int pid)
 // Print a process listing to console.  For debugging.
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
-	void
+void
 procdump(void)
 {
 	static char *states[] = {
@@ -549,7 +624,8 @@ procdump(void)
 	}
 }
 
-int get_num_proc(void)
+int 
+get_num_proc(void)
 {
 	int proc_cnt=0;
 	struct proc *p;
@@ -564,7 +640,8 @@ int get_num_proc(void)
 
 	return proc_cnt;
 }
-int get_max_pid(void)
+int 
+get_max_pid(void)
 {
 	int max_pid=0;
 	struct proc *p;
@@ -604,18 +681,23 @@ get_proc_info(int pid, struct processInfo *procInfo)
 	release(&ptable.lock);
 	return -1;
 }
-/*
-int
-set_priority(int n)
-{
-	struct proc *p;
 
+int
+set_prio(int n)
+{
 	acquire(&ptable.lock);
-	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-		if(p->pid == myproc()->pid){
-			p->priority = n;
-			return 0;
-		}
-	}
-	return -1;
-}*/
+	myproc()->priority = n;
+	release(&ptable.lock);
+	return 0;
+}
+
+int
+get_prio()
+{
+	int prio;
+	acquire(&ptable.lock);
+	prio = myproc() -> priority;	
+	release(&ptable.lock);
+	return prio;
+}
+	

@@ -1,4 +1,4 @@
-/*#include "types.h"
+#include "types.h"
 #include "stat.h"
 #include "user.h"
 
@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
 
     int pids[N];
     int rets[N];
-    setprio(1000);
-    printf(1, "Priority of parent process = %d\n", getprio());
+    set_prio(1000);
+    printf(1, "Priority of parent process = %d\n", get_prio());
 
     for (int i = 0; i < N; i++)
     {
@@ -40,8 +40,9 @@ int main(int argc, char *argv[])
         int ret = fork();
         if (ret == 0)
         {
-            setprio(priority);
+            set_prio(priority);
             delay(20);
+
             exit();
         }
         else if (ret > 0)
@@ -69,4 +70,4 @@ int main(int argc, char *argv[])
         printf(1, "pid %d\n", rets[i]);
 
     exit();
-}*/
+}

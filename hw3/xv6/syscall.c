@@ -135,13 +135,13 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 
-[SYS_hello]   sys_hello,
-[SYS_hello_name]   sys_hello_name,
-[SYS_get_num_proc]   sys_get_num_proc,
-[SYS_get_max_pid]   sys_get_max_pid,
-[SYS_get_proc_info]   sys_get_proc_info,
-[SYS_set_prio] sys_set_prio,
-[SYS_get_prio] sys_get_prio,
+[SYS_hello]			sys_hello,
+[SYS_hello_name]	sys_hello_name,
+[SYS_get_num_proc]	sys_get_num_proc,
+[SYS_get_max_pid]	sys_get_max_pid,
+[SYS_get_proc_info]	sys_get_proc_info,
+[SYS_set_prio]		sys_set_prio,
+[SYS_get_prio]		sys_get_prio,
 };
 
 void
