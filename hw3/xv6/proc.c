@@ -333,11 +333,8 @@ void
 scheduler(void)
 {
 	struct proc *p;
- 	struct proc *tmp;
-	struct proc *queue[NPROC];
 	//int num_q;
-	int i, j;
-	int n;
+	int i;
 	//struct proc *p1;
 	//struct proc *p2;
 	//struct proc *p3;
@@ -349,35 +346,22 @@ scheduler(void)
 		// Enable interrupts on this processor.
 		sti();
 		// Loop over process table looking for process to run.
+		int maxpriority=0;
 		acquire(&ptable.lock);
-		n=0;
-		
-		for(p= ptable.proc; p< &ptable.proc[NPROC]; p++){
-			if(p->state != RUNNABLE)
-				continue;
-			queue[n] = p;
-			n++;
+		for(p=ptable.proc; p<&ptable.proc[NPROC]; p++){
+			if(maxpriority < p->priority)
+				maxpriority = p->priority;
 		}
-		for(i=0; i<n-1; i++){
-			for(j=0; j<n-i-1; j++){
-				if(queue[j]-> priority < queue[j+1]->priority){
-					tmp = queue[j];
-					queue[j] = queue[j+1];
-					queue[j+1] = tmp;
-				}
-			}
-		}
-		for(i=0; i<n; i++){
-			cprintf("%d\n", queue[i]->priority);
+		release(&ptable.lock);
+		for(i=maxpriority; i>=0; i--){
 			
-		
+		acquire(&ptable.lock);
 		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 			if(p->state != RUNNABLE)
 				continue;
-			if(queue[i]->state != RUNNABLE)
-				continue;
-			if(p-> pid == queue[i]->pid){
-			p=queue[i];
+			if(p-> priority == i){
+			cprintf("%d\n", p->priority);
+			c->proc = p;	
 			switchuvm(p);
 			p->state = RUNNING;
 			swtch(&(c->scheduler), p->context);
@@ -386,8 +370,9 @@ scheduler(void)
 			c->proc = 0;
 			}
 		}
-		}
+
 		release(&ptable.lock);
+		}
 	}
 }
 /*
