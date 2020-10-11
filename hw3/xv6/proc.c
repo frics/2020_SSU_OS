@@ -333,90 +333,61 @@ void
 scheduler(void)
 {
 	struct proc *p;
-	//int num_q;
-	int i;
-	//struct proc *p1;
-	//struct proc *p2;
-	//struct proc *p3;
+	struct proc *tmp;
+	struct proc *queue[NPROC];
+	int i, j;
+	int n;
 	struct cpu *c = mycpu();
 	c->proc = 0;
 
 	for(;;){
-		
+
 		// Enable interrupts on this processor.
 		sti();
 		// Loop over process table looking for process to run.
-		int maxpriority=0;
 		acquire(&ptable.lock);
-		for(p=ptable.proc; p<&ptable.proc[NPROC]; p++){
-			if(maxpriority < p->priority)
-				maxpriority = p->priority;
-		}
-		release(&ptable.lock);
-		for(i=maxpriority; i>=0; i--){
-			
-		acquire(&ptable.lock);
-		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		n=0;
+
+		for(p= ptable.proc; p< &ptable.proc[NPROC]; p++){
 			if(p->state != RUNNABLE)
 				continue;
-			if(p-> priority == i){
-			cprintf("%d\n", p->priority);
-			c->proc = p;	
-			switchuvm(p);
-			p->state = RUNNING;
-			swtch(&(c->scheduler), p->context);
-			switchkvm();
-			p->ctsw_cnt++;
-			c->proc = 0;
+			queue[n] = p;
+			n++;
+		}
+		release(&ptable.lock);
+		acquire(&ptable.lock);
+		for(i=0; i<n-1; i++){
+			for(j=0; j<n-i-1; j++){
+				if(queue[j]-> priority < queue[j+1]->priority){
+					tmp = queue[j];
+					queue[j] = queue[j+1];
+					queue[j+1] = tmp;
+				}
 			}
 		}
-
 		release(&ptable.lock);
+		for(i=0; i<n; i++){
+			acquire(&ptable.lock);
+			for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+				if(p->state != RUNNABLE)
+					continue;
+				if(p-> priority >= queue[i]->priority){
+		//			cprintf("%d\n", p->priority);
+					c->proc = p;
+					switchuvm(p);
+					p->state = RUNNING;
+					swtch(&(c->scheduler), p->context);
+					switchkvm();
+					p->ctsw_cnt++;
+					c->proc = 0;
+				}
+			}
+
+			release(&ptable.lock);
 		}
 	}
 }
-/*
-   void
-   scheduler(void)
-   {
-   struct proc *p;
-   struct cpu *c = mycpu();
-   c->proc = 0;
 
-   for(;;){
-// Enable interrupts on this processor.
-sti();
-
-// Loop over process table looking for process to run.
-acquire(&ptable.lock);
-for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-if(p->state != RUNNABLE)
-continue;
-cprintf("%d choose \n", p->pid);
-// Switch to chosen process.  It is the process's job
-// to release ptable.lock and then reacquire it
-// before jumping back to us.
-c->proc = p;
-switchuvm(p);
-p->state = RUNNING;
-
-
-swtch(&(c->scheduler), p->context);
-switchkvm();
-
-//	add by me 
-p->ctsw_cnt++;
-//	add by me 
-
-// Process is done running for now.
-// It should have changed its p->state before coming back.
-c->proc = 0;
-}
-release(&ptable.lock);
-
-}
-}
- */
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this
