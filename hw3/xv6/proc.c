@@ -333,8 +333,8 @@ void
 scheduler(void)
 {
 	struct proc *p;
-	struct proc *tmp;
-	struct proc *queue[NPROC];
+	int tmp;
+	int queue[NPROC];
 	int i, j;
 	int n;
 	struct cpu *c = mycpu();
@@ -351,14 +351,13 @@ scheduler(void)
 		for(p= ptable.proc; p< &ptable.proc[NPROC]; p++){
 			if(p->state != RUNNABLE)
 				continue;
-			queue[n] = p;
-			n++;
+			queue[n++] = p->priority;
 		}
 		release(&ptable.lock);
 		acquire(&ptable.lock);
 		for(i=0; i<n-1; i++){
 			for(j=0; j<n-i-1; j++){
-				if(queue[j]-> priority < queue[j+1]->priority){
+				if(queue[j] < queue[j+1]){
 					tmp = queue[j];
 					queue[j] = queue[j+1];
 					queue[j+1] = tmp;
@@ -371,8 +370,8 @@ scheduler(void)
 			for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 				if(p->state != RUNNABLE)
 					continue;
-				if(p-> priority >= queue[i]->priority){
-		//			cprintf("%d\n", p->priority);
+				if(p-> priority >= queue[i]){
+					cprintf("%d\n", p->priority);
 					c->proc = p;
 					switchuvm(p);
 					p->state = RUNNING;
