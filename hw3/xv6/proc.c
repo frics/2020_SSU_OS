@@ -333,64 +333,60 @@ void
 scheduler(void)
 {
 	struct proc *p;
-	int prio;
+ 	struct proc *tmp;
+	struct proc *queue[NPROC];
+	//int num_q;
+	int i, j;
+	int n;
 	//struct proc *p1;
-	struct proc *p2;
+	//struct proc *p2;
+	//struct proc *p3;
 	struct cpu *c = mycpu();
 	c->proc = 0;
 
 	for(;;){
-
-		prio = 99999999;
+		
 		// Enable interrupts on this processor.
 		sti();
 		// Loop over process table looking for process to run.
 		acquire(&ptable.lock);
-
+		n=0;
+		
+		for(p= ptable.proc; p< &ptable.proc[NPROC]; p++){
+			if(p->state != RUNNABLE)
+				continue;
+			queue[n] = p;
+			n++;
+		}
+		for(i=0; i<n-1; i++){
+			for(j=0; j<n-i-1; j++){
+				if(queue[j]-> priority < queue[j+1]->priority){
+					tmp = queue[j];
+					queue[j] = queue[j+1];
+					queue[j+1] = tmp;
+				}
+			}
+		}
+		for(i=0; i<n; i++){
+			cprintf("%d\n", queue[i]->priority);
+			
+		
 		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 			if(p->state != RUNNABLE)
 				continue;
-			
-			for(p2 = p; p2 < &ptable.proc[NPROC]; p2++){
-				if(p2->state != RUNNABLE){
-					continue;
-				}
-				if(p->priority < p2->priority && p2->priority != prio){
-					p = p2;
-				}
-			}
-			
-			cprintf("%d is on\n", p->priority);
-
-			// Switch to chosen process.  It is the process's job
-			// to release ptable.lock and then reacquire it	
-			// before jumping back to us.
-			c->proc = p;
-
-			//유저한테 프로세스를 로드 
-			switchuvm(p);
-
-			//프로세스 상태 변경
-			p->state = RUNNING;
-
-			//프로세스를 실행할 수 있도록 switch
-			swtch(&(c->scheduler), p->context);
-
-			//커널이 프로세스 메모리 로드
-			switchkvm();
-
-			//context switching 횟수 증가
-			p->ctsw_cnt++;
-			//prio = p->priority;
-			// Process is done running for now.
-			// It should have changed its p->state before coming back.
-			c->proc = 0;
-		}
-		/*
-		for(p2= ptable.proc; p2< &ptable.proc[NPROC]; p++){
-			if(p2->state != RUNNABLE)
+			if(queue[i]->state != RUNNABLE)
 				continue;
-*/
+			if(p-> pid == queue[i]->pid){
+			p=queue[i];
+			switchuvm(p);
+			p->state = RUNNING;
+			swtch(&(c->scheduler), p->context);
+			switchkvm();
+			p->ctsw_cnt++;
+			c->proc = 0;
+			}
+		}
+		}
 		release(&ptable.lock);
 	}
 }
@@ -490,7 +486,7 @@ forkret(void)
 		initlog(ROOTDEV);
 	}
 
-	// Return to "caller", actually trapret (see allocproc).
+	// Return to "caller", actually trapret (seeallocproc).
 }
 
 // Atomically release lock and sleep on chan.
