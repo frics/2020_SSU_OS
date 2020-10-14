@@ -5,7 +5,7 @@ _getprocinfo_test:     file format elf32-i386
 Disassembly of section .text:
 
 00000000 <main>:
-
+#include "fcntl.h"
 #include "processInfo.h"
 
 

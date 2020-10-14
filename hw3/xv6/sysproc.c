@@ -130,8 +130,6 @@ sys_get_proc_info(void)
 	return get_proc_info(pid, procInfo);
 }
 
-//혹시 스케줄링중에 버그 발생하면
-//set_prio를 proc.c로 넣어서 테스트
 int 
 sys_set_prio(void)
 {
@@ -139,14 +137,11 @@ sys_set_prio(void)
 	if(argint(0, &n) <0)
 		return -1;
 	return set_prio(n);
-	//myproc()-> priority = n;
-	//return 0; 
 }
 
 int 
 sys_get_prio(void)
 {
-	//return myproc()->priority;
 	return get_prio();
 }
 

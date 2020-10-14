@@ -562,7 +562,7 @@ procdump(void)
 	}
 }
 
-	int 
+int 
 get_num_proc(void)
 {
 	int proc_cnt=0;
@@ -578,7 +578,7 @@ get_num_proc(void)
 
 	return proc_cnt;
 }
-	int 
+int 
 get_max_pid(void)
 {
 	int max_pid=0;
@@ -595,7 +595,7 @@ get_max_pid(void)
 	return max_pid;
 }
 
-	int
+int
 get_proc_info(int pid, struct processInfo *procInfo)
 {
 	struct proc *p;
