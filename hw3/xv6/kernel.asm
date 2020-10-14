@@ -6866,10 +6866,10 @@ found:
 	p->state = EMBRYO;
 	p->pid = nextpid++;
 80103649:	a1 04 a0 10 80       	mov    0x8010a004,%eax
-	/******add by me *****/
+	//문맥 교환 횟수 초기화
 	p->switch_cnt = 0;
+	//프로세스의 default priority 설정
 	p->priority = 0;
-	/******add by me *****/
 
 	release(&ptable.lock);
 8010364e:	83 ec 0c             	sub    $0xc,%esp
@@ -8227,7 +8227,7 @@ get_num_proc(void)
 80104239:	68 20 2d 11 80       	push   $0x80112d20
 8010423e:	e8 2d 04 00 00       	call   80104670 <acquire>
 80104243:	83 c4 10             	add    $0x10,%esp
-
+	//UNUSED가 아닌 모든 활성화된 프로세스를 찾는다.
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 80104246:	ba 54 2d 11 80       	mov    $0x80112d54,%edx
 8010424b:	90                   	nop
@@ -8271,7 +8271,7 @@ get_max_pid(void)
 80104289:	68 20 2d 11 80       	push   $0x80112d20
 8010428e:	e8 dd 03 00 00       	call   80104670 <acquire>
 80104293:	83 c4 10             	add    $0x10,%esp
-
+	//ptable를 탐색하여 가장 큰 pid를 찾는다.
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 80104296:	ba 54 2d 11 80       	mov    $0x80112d54,%edx
 8010429b:	90                   	nop
@@ -8337,6 +8337,7 @@ get_proc_info(int pid, struct processInfo *procInfo)
 8010430e:	8b 50 14             	mov    0x14(%eax),%edx
 80104311:	8b 52 10             	mov    0x10(%edx),%edx
 80104314:	89 16                	mov    %edx,(%esi)
+			//proc에 저장된 정보를 procInfo에 넣어준다.
 			procInfo -> psize = p-> sz;
 80104316:	8b 10                	mov    (%eax),%edx
 			procInfo -> numberContextSwitches= p->switch_cnt;
@@ -8353,8 +8354,9 @@ get_proc_info(int pid, struct processInfo *procInfo)
 80104329:	e8 02 04 00 00       	call   80104730 <release>
 			return 0;
 8010432e:	83 c4 10             	add    $0x10,%esp
-		}
 	}
+	//반복문이 다 돌았는데 반복문안에서 종료가 되지 않으면
+	//해당 프로세스가 없는 것으로 간주하여 -1 리턴
 	release(&ptable.lock);
 	return -1;
 }
@@ -8409,6 +8411,7 @@ set_prio(int n)
 8010438b:	8b 98 ac 00 00 00    	mov    0xac(%eax),%ebx
 	popcli();
 80104391:	e8 4a 02 00 00       	call   801045e0 <popcli>
+	//현재 프로세스의 priority 설정
 	myproc()->priority = n;
 80104396:	8b 45 08             	mov    0x8(%ebp),%eax
 80104399:	89 83 80 00 00 00    	mov    %eax,0x80(%ebx)
@@ -8445,11 +8448,13 @@ get_prio()
 801043db:	8b 98 ac 00 00 00    	mov    0xac(%eax),%ebx
 	popcli();
 801043e1:	e8 fa 01 00 00       	call   801045e0 <popcli>
+	//현재 프로세스의 priority를 prio에 저장한다.
 	prio = myproc() -> priority;	
 801043e6:	8b 9b 80 00 00 00    	mov    0x80(%ebx),%ebx
 	release(&ptable.lock);
 801043ec:	c7 04 24 20 2d 11 80 	movl   $0x80112d20,(%esp)
 801043f3:	e8 38 03 00 00       	call   80104730 <release>
+	//prio 반환
 	return prio;
 }
 801043f8:	89 d8                	mov    %ebx,%eax
@@ -11482,7 +11487,7 @@ sys_hello_name(void)
 80105981:	89 e5                	mov    %esp,%ebp
 80105983:	83 ec 20             	sub    $0x20,%esp
 	char *name;
-	
+	//UserMode에서 전달한 인자 받아오기	
 	if(argstr(0, &name) <0)
 80105986:	8d 45 f4             	lea    -0xc(%ebp),%eax
 80105989:	50                   	push   %eax
@@ -11520,6 +11525,7 @@ sys_get_num_proc(void)
 {
 801059c0:	55                   	push   %ebp
 801059c1:	89 e5                	mov    %esp,%ebp
+	//proc.c의 get_num_proc()호출
 	return get_num_proc();
 }
 801059c3:	5d                   	pop    %ebp
@@ -11533,6 +11539,7 @@ sys_get_max_pid(void)
 {
 801059d0:	55                   	push   %ebp
 801059d1:	89 e5                	mov    %esp,%ebp
+	//proc.c의 get_max_pid()호출
 	return get_max_pid();
 }
 801059d3:	5d                   	pop    %ebp
@@ -11549,6 +11556,7 @@ sys_get_proc_info(void)
 801059e3:	83 ec 20             	sub    $0x20,%esp
 	int pid;
 	struct processInfo *procInfo;
+	//UserMode에서 전달한 인자 받아오기
 	if(argint(0, &pid) < 0 || argptr(1, (void*)&procInfo, sizeof(*procInfo)))
 801059e6:	8d 45 f0             	lea    -0x10(%ebp),%eax
 801059e9:	50                   	push   %eax
@@ -11568,6 +11576,7 @@ sys_get_proc_info(void)
 80105a0d:	75 19                	jne    80105a28 <sys_get_proc_info+0x48>
 		return -1;
 
+	//proc.c의 get_proc_info()호출
 	return get_proc_info(pid, procInfo);
 80105a0f:	83 ec 08             	sub    $0x8,%esp
 80105a12:	ff 75 f4             	pushl  -0xc(%ebp)
@@ -11594,6 +11603,7 @@ sys_set_prio(void)
 80105a31:	89 e5                	mov    %esp,%ebp
 80105a33:	83 ec 20             	sub    $0x20,%esp
 	int n;
+	//UserMode에서 전달한 인자 받아오기
 	if(argint(0, &n) <0)
 80105a36:	8d 45 f4             	lea    -0xc(%ebp),%eax
 80105a39:	50                   	push   %eax
@@ -11603,6 +11613,7 @@ sys_set_prio(void)
 80105a44:	85 c0                	test   %eax,%eax
 80105a46:	78 18                	js     80105a60 <sys_set_prio+0x30>
 		return -1;
+	//proc.c의 set_prio(int n)호출
 	return set_prio(n);
 80105a48:	83 ec 0c             	sub    $0xc,%esp
 80105a4b:	ff 75 f4             	pushl  -0xc(%ebp)
@@ -11628,6 +11639,7 @@ sys_get_prio(void)
 {
 80105a70:	55                   	push   %ebp
 80105a71:	89 e5                	mov    %esp,%ebp
+	//proc.c의 get_prio(void)호출
 	return get_prio();
 }
 80105a73:	5d                   	pop    %ebp
