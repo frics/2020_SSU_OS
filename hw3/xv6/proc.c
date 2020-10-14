@@ -333,7 +333,10 @@ void
 scheduler(void)
 {
 	struct proc *p;
-	int i;
+	int tmp;
+	int queue[NPROC];
+	int i, j;
+	int n;
 	struct cpu *c = mycpu();
 	c->proc = 0;
 
@@ -343,23 +346,31 @@ scheduler(void)
 		sti();
 		// Loop over process table looking for process to run.
 		acquire(&ptable.lock);
-		int maxprio=0;
+		n=0;
+
 		for(p= ptable.proc; p< &ptable.proc[NPROC]; p++){
 			if(p->state != RUNNABLE)
 				continue;
-			if(maxprio < p->priority)
-				maxprio = p->priority;
+			queue[n++] = p->priority;
 		}
-
 		release(&ptable.lock);
-		
-		for(i=maxprio; i>=0; i-=10){
+		acquire(&ptable.lock);
+		for(i=0; i<n-1; i++){
+			for(j=0; j<n-i-1; j++){
+				if(queue[j] < queue[j+1]){
+					tmp = queue[j];
+					queue[j] = queue[j+1];
+					queue[j+1] = tmp;
+				}
+			}
+		}
+		release(&ptable.lock);
+		for(i=0; i<n; i++){
 			acquire(&ptable.lock);
 			for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 				if(p->state != RUNNABLE)
 					continue;
-				if(p-> priority >= i){
-				//	cprintf("%d\n", p->priority);
+				if(p-> priority >= queue[i]){
 					c->proc = p;
 					switchuvm(p);
 					p->state = RUNNING;
@@ -369,12 +380,10 @@ scheduler(void)
 					c->proc = 0;
 				}
 			}
-
 			release(&ptable.lock);
 		}
 	}
 }
-
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this
