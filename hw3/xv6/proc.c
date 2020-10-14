@@ -92,10 +92,10 @@ found:
 	p->state = EMBRYO;
 	p->pid = nextpid++;
 
-	/******add by me *****/
+	//문맥 교환 횟수 초기화
 	p->switch_cnt = 0;
+	//프로세스의 default priority 설정
 	p->priority = 0;
-	/******add by me *****/
 
 	release(&ptable.lock);
 
@@ -348,13 +348,16 @@ scheduler(void)
 		acquire(&ptable.lock);
 		n=0;
 
+		//int형 배열에 활성화된 프로세스들의 priority 삽입
 		for(p= ptable.proc; p< &ptable.proc[NPROC]; p++){
 			if(p->state != RUNNABLE)
 				continue;
+			//배열에 삽입함과 동시에 들어간 갯수 카운트
 			queue[n++] = p->priority;
 		}
 		release(&ptable.lock);
-//		acquire(&ptable.lock);
+
+		//int형 배열에 삽입된  priority들을 정렬한다(bubble sort).
 		for(i=0; i<n-1; i++){
 			for(j=0; j<n-i-1; j++){
 				if(queue[j] < queue[j+1]){
@@ -364,19 +367,24 @@ scheduler(void)
 				}
 			}
 		}
-//		release(&ptable.lock);
+		//카운트된 개수만큼 반복문 수행
 		for(i=0; i<n; i++){
 			acquire(&ptable.lock);
 			for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 				if(p->state != RUNNABLE)
 					continue;
+				//현재 i번째 배열에 있는 priority보다
+				//priority가 큰 process만 문맥 교환을 해준다.
 				if(p-> priority >= queue[i]){
 					c->proc = p;
 					switchuvm(p);
 					p->state = RUNNING;
 					swtch(&(c->scheduler), p->context);
 					switchkvm();
+
+					//문맥 교환 횟수 증가
 					p->switch_cnt++;
+
 					c->proc = 0;
 				}
 			}
@@ -569,7 +577,7 @@ get_num_proc(void)
 	struct proc *p;
 
 	acquire(&ptable.lock);
-
+	//UNUSED가 아닌 모든 활성화된 프로세스를 찾는다.
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 		if(p->state != UNUSED)
 			proc_cnt++;
@@ -585,7 +593,7 @@ get_max_pid(void)
 	struct proc *p;
 
 	acquire(&ptable.lock);
-
+	//ptable를 탐색하여 가장 큰 pid를 찾는다.
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 		if(p -> pid > max_pid)
 			max_pid = p -> pid;
@@ -609,6 +617,7 @@ get_proc_info(int pid, struct processInfo *procInfo)
 				procInfo -> ppid = 0;
 			else
 				procInfo -> ppid = p->parent->pid;
+			//proc에 저장된 정보를 procInfo에 넣어준다.
 			procInfo -> psize = p-> sz;
 			procInfo -> numberContextSwitches= p->switch_cnt;
 
@@ -616,6 +625,8 @@ get_proc_info(int pid, struct processInfo *procInfo)
 			return 0;
 		}
 	}
+	//반복문이 다 돌았는데 반복문안에서 종료가 되지 않으면
+	//해당 프로세스가 없는 것으로 간주하여 -1 리턴
 	release(&ptable.lock);
 	return -1;
 }
@@ -624,6 +635,7 @@ get_proc_info(int pid, struct processInfo *procInfo)
 set_prio(int n)
 {
 	acquire(&ptable.lock);
+	//현재 프로세스의 priority 설정
 	myproc()->priority = n;
 	release(&ptable.lock);
 	return 0;
@@ -634,8 +646,10 @@ get_prio()
 {
 	int prio;
 	acquire(&ptable.lock);
+	//현재 프로세스의 priority를 prio에 저장한다.
 	prio = myproc() -> priority;	
 	release(&ptable.lock);
+	//prio 반환
 	return prio;
 }
 
