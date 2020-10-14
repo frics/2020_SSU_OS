@@ -93,7 +93,7 @@ found:
 	p->pid = nextpid++;
 
 	/******add by me *****/
-	p->ctsw_cnt = 0;
+	p->switch_cnt = 0;
 	p->priority = 0;
 	/******add by me *****/
 
@@ -333,10 +333,7 @@ void
 scheduler(void)
 {
 	struct proc *p;
-	int tmp;
-	int queue[NPROC];
-	int i, j;
-	int n;
+	int i;
 	struct cpu *c = mycpu();
 	c->proc = 0;
 
@@ -346,38 +343,29 @@ scheduler(void)
 		sti();
 		// Loop over process table looking for process to run.
 		acquire(&ptable.lock);
-		n=0;
-
+		int maxprio=0;
 		for(p= ptable.proc; p< &ptable.proc[NPROC]; p++){
 			if(p->state != RUNNABLE)
 				continue;
-			queue[n++] = p->priority;
+			if(maxprio < p->priority)
+				maxprio = p->priority;
 		}
+
 		release(&ptable.lock);
-		acquire(&ptable.lock);
-		for(i=0; i<n-1; i++){
-			for(j=0; j<n-i-1; j++){
-				if(queue[j] < queue[j+1]){
-					tmp = queue[j];
-					queue[j] = queue[j+1];
-					queue[j+1] = tmp;
-				}
-			}
-		}
-		release(&ptable.lock);
-		for(i=0; i<n; i++){
+		
+		for(i=maxprio; i>=0; i-=10){
 			acquire(&ptable.lock);
 			for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 				if(p->state != RUNNABLE)
 					continue;
-				if(p-> priority >= queue[i]){
-					cprintf("%d\n", p->priority);
+				if(p-> priority >= i){
+				//	cprintf("%d\n", p->priority);
 					c->proc = p;
 					switchuvm(p);
 					p->state = RUNNING;
 					swtch(&(c->scheduler), p->context);
 					switchkvm();
-					p->ctsw_cnt++;
+					p->switch_cnt++;
 					c->proc = 0;
 				}
 			}
@@ -613,7 +601,7 @@ get_proc_info(int pid, struct processInfo *procInfo)
 			else
 				procInfo -> ppid = p->parent->pid;
 			procInfo -> psize = p-> sz;
-			procInfo -> numberContextSwitches= p->ctsw_cnt;
+			procInfo -> numberContextSwitches= p->switch_cnt;
 
 			release(&ptable.lock);
 			return 0;
