@@ -354,7 +354,7 @@ scheduler(void)
 			queue[n++] = p->priority;
 		}
 		release(&ptable.lock);
-		acquire(&ptable.lock);
+//		acquire(&ptable.lock);
 		for(i=0; i<n-1; i++){
 			for(j=0; j<n-i-1; j++){
 				if(queue[j] < queue[j+1]){
@@ -364,7 +364,7 @@ scheduler(void)
 				}
 			}
 		}
-		release(&ptable.lock);
+//		release(&ptable.lock);
 		for(i=0; i<n; i++){
 			acquire(&ptable.lock);
 			for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
