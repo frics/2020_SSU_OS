@@ -5,7 +5,9 @@
 
 struct rw_lock
 {
-
+	int lock;
+	int write_cnt;
+	int read_cnt;
 };
 
 void init_rwlock(struct rw_lock * rw);
