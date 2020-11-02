@@ -17,7 +17,8 @@ SSU_Sem parent;
 void *justprint(void *data)
 {
 	int thread_id = *((int *)data);
-	
+
+	SSU_Sem_up(&parent);
 	for(int i=0; i < NUM_ITER; i++)
 	{
 		SSU_Sem_down(&child);
@@ -40,7 +41,7 @@ int main(int argc, char *argv[])
 	{
 		mythread_id[i] = i;
 		pthread_create(&mythreads[i], NULL, justprint, (void *)&mythread_id[i]);
-		sleep(1);
+		SSU_Sem_down(&parent);
 	}
 	for(int i=0; i<NUM_ITER*NUM_THREADS; i++){
 		SSU_Sem_up(&child);
