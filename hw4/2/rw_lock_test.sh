@@ -1,6 +1,5 @@
 correct=0
 total=0
-
 echo "TESTSET: Running Testcases with reader test"
 gcc reader_test.c rw_lock-r-test.c rw_lock.c -o rw_lock-r-test -lpthread
 
