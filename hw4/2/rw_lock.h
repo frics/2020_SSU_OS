@@ -6,7 +6,7 @@
 struct rw_lock
 {
 	int write_cnt;
-	int write_queue_cnt;
+	int write_wait;
 	int read_cnt;
 	pthread_mutex_t rw_mutex;
 	pthread_cond_t r_cond;

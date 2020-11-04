@@ -55,6 +55,7 @@ if [ "$out" = "PASSED" ]; then
     correct=$((correct+1))
 fi
 
+
 echo "Test Cases Passed: $correct"
 echo "Test Cases Total: $total"
 

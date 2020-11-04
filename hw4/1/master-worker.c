@@ -120,12 +120,12 @@ int main(int argc, char *argv[])
 	}
 
 	buffer = (int *)malloc (sizeof(int) * max_buf_size);
-	tmp_buffer = buffer;
+//	tmp_buffer = buffer;
 
 	//create master producer threads
 	master_thread_id = (int *)malloc(sizeof(int) * num_masters);
 
-	tmp_m_id = master_thread_id;
+//	tmp_m_id = master_thread_id;
 
 	master_thread = (pthread_t *)malloc(sizeof(pthread_t) * num_masters);
 
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 	//create worker consumer threads
 
 	worker_thread_id = (int *)malloc(sizeof(int) * num_workers);
-	tmp_w_id = worker_thread_id;
+//	tmp_w_id = worker_thread_id;
 
 	worker_thread = (pthread_t *)malloc(sizeof(pthread_t) * num_workers);
 
@@ -150,29 +150,24 @@ int main(int argc, char *argv[])
 
 
 	//wait for all threads to complete
-	for (i = 0; i < num_workers; i++)
-	{
-		pthread_join(worker_thread[i], NULL);
-		printf("worker %d joined\n", i);
-	}
 	for (i = 0; i < num_masters; i++)
 	{
 		pthread_join(master_thread[i], NULL);
 		printf("master %d joined\n", i);
+	}
+	for (i = 0; i < num_workers; i++)
+	{
+		pthread_join(worker_thread[i], NULL);
+		printf("worker %d joined\n", i);
 	}
 
 	/*----Deallocating Buffers------------------*/
 	pthread_mutex_destroy(&mutex);
 	pthread_cond_destroy(&produce);
 	pthread_cond_destroy(&consume);
-	//buffer = tmp_buffer;
-//	master_thread_id = tmp_m_id;
-//	worker_thread_id = tmp_w_id;
 //	free(buffer);
-//	free(master_thread_id);
-	free(master_thread);
-//	free(worker_thread_id);
-	free(worker_thread);
+//	free(master_thread);
+//	free(worker_thread);
 
 	return 0;
 }

@@ -8,18 +8,18 @@ void init_rwlock(struct rw_lock * rw)
 
 	rw->read_cnt = 0;
 	rw->write_cnt = 0;
-	rw->write_queue_cnt = 0;
+	rw->write_wait = 0;
 	return;
 }
 
 void r_lock(struct rw_lock * rw)
 {
-
-	//read lock은 누구나 획득 가능
 	pthread_mutex_lock(&rw->rw_mutex);
-	rw->read_cnt++;
-	if(rw->write_queue_cnt > 0 || rw->write_cnt > 0)
+
+	if(rw->write_cnt > 0 || rw->write_wait >0){
 		pthread_cond_wait(&rw->r_cond, &rw->rw_mutex);
+	}
+	rw->read_cnt++;
 	pthread_mutex_unlock(&rw->rw_mutex);
 }
 
@@ -27,22 +27,22 @@ void r_unlock(struct rw_lock * rw)
 {
 	pthread_mutex_lock(&rw->rw_mutex);
 	rw->read_cnt--;
-	if(rw->read_cnt == 0){
+
+	if(rw->write_wait > 0 && rw->read_cnt == 0){
+		pthread_cond_signal(&rw->w_cond);
+	}else if(rw->write_wait == 0 && rw->read_cnt ==0){
 		pthread_cond_signal(&rw->r_cond);
 	}
-
 	pthread_mutex_unlock(&rw->rw_mutex);
 }
 
 void w_lock(struct rw_lock * rw)
 {
 	pthread_mutex_lock(&rw->rw_mutex);
-	if(rw->read_cnt > 0 || rw->write_cnt > 0){
-		rw->write_queue_cnt++;
-		pthread_cond_wait(&rw->r_cond, &rw->rw_mutex);
-		rw->write_queue_cnt--;
-		//if(rw->write_queue_cnt != 0)
-		//	pthread_cond_signal(&rw->r_cond);
+	if(rw->read_cnt > 0 || rw->write_cnt >0){
+		rw->write_wait++;
+		pthread_cond_wait(&rw->w_cond, &rw->rw_mutex);
+		rw->write_wait--;
 	}
 	rw->write_cnt++;
 	pthread_mutex_unlock(&rw->rw_mutex);
@@ -51,11 +51,12 @@ void w_lock(struct rw_lock * rw)
 void w_unlock(struct rw_lock * rw)
 {
 	pthread_mutex_lock(&rw->rw_mutex);
-	rw -> write_cnt--;
+	rw->write_cnt--;
 
-	if(rw->write_cnt == 0){
+	if(rw->write_wait > 0){
+		pthread_cond_signal(&rw->w_cond);
+	}else if(rw->write_wait ==0){
 		pthread_cond_broadcast(&rw->r_cond);
-		//pthread_cond_signal(&rw->w_cond);
 	}
 	pthread_mutex_unlock(&rw->rw_mutex);
 

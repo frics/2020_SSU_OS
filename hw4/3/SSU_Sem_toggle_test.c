@@ -43,6 +43,8 @@ int main(int argc, char *argv[])
 		pthread_create(&mythreads[i], NULL, justprint, (void *)&mythread_id[i]);
 		SSU_Sem_down(&parent);
 	}
+	
+	
 	for(int i=0; i<NUM_ITER*NUM_THREADS; i++){
 		SSU_Sem_up(&child);
 		SSU_Sem_down(&parent);
