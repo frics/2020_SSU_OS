@@ -1,6 +1,12 @@
 #include <pthread.h>
 
 typedef struct SSU_Sem {
+	//semaphore를 관리하기 위한 value
+	int value;
+	//semaphore value를 protect 하기 위한 mutex, cond
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+
 } SSU_Sem;
 
 void SSU_Sem_init(SSU_Sem *, int);
