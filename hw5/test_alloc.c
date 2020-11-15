@@ -9,8 +9,10 @@
 int main()
 {
 	//mmap to get page
-	if(init_alloc())
+	if(init_alloc()){
+		printf("mmap failed\n");
 		return 1;	//mmap failed
+	}
 
 	char *str = alloc(512);
 	char *str2 = alloc(512);
