@@ -29,23 +29,14 @@ char *alloc(int size){
 	for(int i = 0 ; i < NUM; i++){
 		int valid =0;
 		if(mem[i].flag == 0){
-			valid += MINALLOC;
-			if(size <= valid){
-				mem[i].flag = 1;
-				adr = i*MINALLOC+start;
-				return adr;
-			}else{
-				int j = i+1;
-				while(mem[j].flag != 1 || j<NUM){
-					valid += MINALLOC;
-					if(size <= valid){
-						mem[i].size = valid;
-						mem[i].flag = 1;
-						adr = i*MINALLOC+start;
-						mem[i].adr = adr;
-						return adr;
-					}
-					j++;
+			for(int j=i; mem[j].flag != 1 || j<NUM; j++){
+				valid += MINALLOC;
+				if(size <= valid){
+					mem[i].size = valid;
+					mem[i].flag = 1;
+					adr = i*MINALLOC+start;
+					mem[i].adr = adr;
+					return adr;
 				}
 			}
 		}else if(mem[i].size != MINALLOC){
