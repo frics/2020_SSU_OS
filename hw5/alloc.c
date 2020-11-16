@@ -9,8 +9,6 @@ struct mm{
 char* start;
 struct mm mem[NUM];
 int init_alloc(){
-
-	cur_position = 0;
 	for(int i=0; i<NUM; i++){
 		mem[i].adr = 0;
 		mem[i].size = MINALLOC;
@@ -28,31 +26,19 @@ int cleanup(){
 char *alloc(int size){
 	char* adr;
 
-	for(int i = 0 ; i < NUM; i++)
-	{
+	for(int i = 0 ; i < NUM; i++){
 		int valid =0;
-		if(mem[i].flag == 0)
-		{
+		if(mem[i].flag == 0){
 			valid += MINALLOC;
-			if(size <= valid)
-			{
-				//여기는 안들어가도 되긴함
-				//mem[i].size = valid;
-				//printf("find!!\n");
+			if(size <= valid){
 				mem[i].flag = 1;
 				adr = i*MINALLOC+start;
 				return adr;
-			}else
-			{
-//				printf("메모리 확장중\n");
+			}else{
 				int j = i+1;
 				while(mem[j].flag != 1 || j<NUM){
 					valid += MINALLOC;
-					if(size <= valid)
-					{
-						//printf("find!!\n");
-						//printf("현재 블럭 크기: %d\n", valid);
-						//printf("index : %d\n", i);
+					if(size <= valid){
 						mem[i].size = valid;
 						mem[i].flag = 1;
 						adr = i*MINALLOC+start;
@@ -63,7 +49,6 @@ char *alloc(int size){
 				}
 			}
 		}else if(mem[i].size != MINALLOC){
-			//printf("index jumping\n");
 			i += (mem[i].size/MINALLOC -1);
 			if(i>=NUM)
 				break;
@@ -74,7 +59,6 @@ char *alloc(int size){
 void dealloc(char *adr){
 	for(int i = 0; i<NUM; i++){
 		if(mem[i].adr == adr){
-//			printf("해제할거 찾음\n");
 			mem[i].adr = 0;
 			mem[i].size = MINALLOC;
 			mem[i].flag = 0;
@@ -83,4 +67,3 @@ void dealloc(char *adr){
 	}
 	return;
 }
-
