@@ -19,8 +19,13 @@ int init_alloc(){
 	return 0;
 }
 int cleanup(){
-	if(munmap(start, PAGESIZE))
+	system("ps -u | grep ./test_alloc ");
+	printf("\n\n");
+	//이거 munmap을 start 넣어주면 rss가 두배나오고
+	//0 넣으면 변동 없음
+	if(munmap(0, PAGESIZE))
 		return 1;
+	system("ps -u | grep ./test_alloc ");
 	return 0;
 }
 char *alloc(int size){
