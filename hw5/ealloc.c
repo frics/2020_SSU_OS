@@ -1,4 +1,4 @@
-#include "alloc.h"
+#include "ealloc.h"
 #define NUM 512
 
 struct mm{
@@ -8,7 +8,7 @@ struct mm{
 };
 char* start;
 struct mm mem[NUM];
-int init_alloc(){
+void init_alloc(){
 	for(int i=0; i<NUM; i++){
 		mem[i].adr = 0;
 		mem[i].size = MINALLOC;
@@ -18,7 +18,7 @@ int init_alloc(){
 
 	return 0;
 }
-int cleanup(){
+void cleanup(){
 	if(munmap(start, PAGESIZE))
 		return 1;
 	return 0;
