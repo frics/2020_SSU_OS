@@ -7,7 +7,7 @@ struct mm{
 	int size;
 	int flag;
 };
-char* start[PNUM];
+char *start[PNUM];
 struct mm mem[PNUM][NUM];
 
 void init_alloc(){
@@ -19,32 +19,28 @@ void init_alloc(){
 			mem[p][i].flag= 0;
 		}
 	}
-	//	start = (char *)mmap(0, PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
 	return;
 }
 void cleanup(){
-//	system("ps -u | grep ./test_ealloc");
-//	printf("\n\n\n\n");
 	for(int i=0; i<PNUM; i++){
 		if(start[i] != NULL)
 			munmap(start[i], PAGESIZE);
 	}
-//	system("ps -u | grep ./test_ealloc");
 	return;
 }
 char *alloc(int size){
-	char* adr;
+	char *adr;
 
 	for(int p=0; p<PNUM; p++){
-		if(start[p] == NULL){
+		if(start[p] == NULL)
 			start[p] = (char *)mmap(0, PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-			printf("%d번째 페이지 생성\n", p+1);
-		}
+
 		for(int i = 0; i < NUM; i++){
 			int valid = 0;
 			if(mem[p][i].flag ==0){
-				for(int j=0; mem[p][j].flag != 1 || j<NUM; j++){
+				for(int j=i; j<NUM; j++){
+					if(mem[p][j].flag == 1)
+						break;
 					valid += MINALLOC;
 					if(size <= valid){
 						mem[p][i].size = valid;

@@ -6,7 +6,7 @@ struct mm{
 	int size;
 	int flag;
 };
-char* start;
+char *start;
 struct mm mem[NUM];
 int init_alloc(){
 	for(int i=0; i<NUM; i++){
@@ -15,26 +15,26 @@ int init_alloc(){
 		mem[i].flag= 0;
 	}
 	start = (char *)mmap(0, PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if(start == MAP_FAILED)
+		return 1;
 
 	return 0;
 }
 int cleanup(){
-	system("ps -u | grep ./test_alloc ");
-	printf("\n\n");
-	//이거 munmap을 start 넣어주면 rss가 두배나오고
-	//0 넣으면 변동 없음
-	if(munmap(0, PAGESIZE))
+	if(munmap(start, PAGESIZE)==-1)
 		return 1;
-	system("ps -u | grep ./test_alloc ");
 	return 0;
 }
 char *alloc(int size){
-	char* adr;
-
+	char *adr;
+	if(size > PAGESIZE || size%8 != 0)
+		return NULL;
 	for(int i = 0 ; i < NUM; i++){
 		int valid =0;
 		if(mem[i].flag == 0){
-			for(int j=i; mem[j].flag != 1 || j<NUM; j++){
+			for(int j=i; j<NUM; j++){
+				if(mem[j].flag ==1)
+					break;
 				valid += MINALLOC;
 				if(size <= valid){
 					mem[i].size = valid;
