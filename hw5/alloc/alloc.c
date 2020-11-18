@@ -27,7 +27,7 @@ int cleanup(){
 }
 char *alloc(int size){
 	char *adr;
-	if(size > PAGESIZE || size%8 != 0)
+	if(size > PAGESIZE || size % 8 != 0)
 		return NULL;
 	for(int i = 0 ; i < NUM; i++){
 		int valid =0;
@@ -45,7 +45,7 @@ char *alloc(int size){
 				}
 			}
 		}else if(mem[i].size != MINALLOC){
-			i += (mem[i].size/MINALLOC -1);
+			i += mem[i].size/MINALLOC -1;
 			if(i>=NUM)
 				break;
 		}

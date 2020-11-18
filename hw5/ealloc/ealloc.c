@@ -51,7 +51,7 @@ char *alloc(int size){
 					}
 				}
 			}else if(mem[p][i].size != MINALLOC){
-				i +=(mem[p][i].size/MINALLOC-1);
+				i += mem[p][i].size/MINALLOC-1;
 				if(i>=NUM)
 					break;
 			}
