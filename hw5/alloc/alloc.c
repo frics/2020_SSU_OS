@@ -29,6 +29,12 @@ int init_alloc(){
 }
 
 int cleanup(){
+	//memory manager 구조체 배열 초기화
+	for(int i=0; i<NUM; i++){
+		mem[i].adr = NULL;
+		mem[i].size = MINALLOC;
+		mem[i].flag= 0;
+	}
 	//mmap을 통해 할당한 memory 해제
 	if(munmap(start, PAGESIZE)==-1)
 		return 1;
