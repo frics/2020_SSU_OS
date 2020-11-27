@@ -11,26 +11,19 @@ int main()
 	//mmap to get page
 	if(init_alloc())
 		return 1;	//mmap failed
-
-	char *str = alloc(512);
-	char *str2 = alloc(512);
-
-	if(str == NULL || str2 == NULL)
-	{
-		printf("alloc failed\n");
-		return 1;
-	}
-
-	strcpy(str, "Hello, world!");
-	if(strcmp("Hello, world!", str))
-	  printf("Hello, world! test failed\n");
+	//make test case
+	char *strOverSize = alloc(4096*2);
+	if(strOverSize == NULL)
+		printf("Oversize Test passed\n");
 	else
-	  printf("Hello, world! test passed\n");
-	
-	dealloc(str);
-	dealloc(str2);
+		printf("Oversize Test failed\n");
 
-	printf("Elementary tests passed\n");
+	char *strWrong = alloc(7);
+	if(strWrong == NULL)
+		printf("Wrongsize Test passed\n");
+	else
+		printf("Wrongsize Test failed\n");
+
 	
 	printf("Starting comprehensive tests (see details in code)\n");
 
@@ -40,18 +33,6 @@ int main()
 	2. Dealloc c's, reallocate and replace with x's.
 	3. 
 	*/
-	char *strDong = alloc(10000);
-	if(strDong == NULL)
-		printf("Oversize Test passed\n");
-	else
-		printf("Oversize Test failed\n");
-
-	char *strDong2 = alloc(-1);
-	if(strDong == NULL)
-		printf("Wrongsize Test passed\n");
-	else
-		printf("Wrongsize Test failed\n");
-
 	/*** test 1 ****/
 	
 	//Generating ideal strings for comparison
@@ -86,76 +67,32 @@ int main()
 	else
 	  printf("Test 1 failed: A: %d, B: %d, C: %d, D: %d\n", strcmp(stringA, strA), strcmp(stringB, strB), strcmp(stringC, strC), strcmp(stringD, strD));
 
-	/**** test 2 ****/
-	
-	dealloc(strC);
-
-	char *strX = alloc(1024);
-	for(int i = 0; i < 1023; i++)
-	{
-		strX[i] = 'x';
-	}
-	strX[1023] = '\0';
-
-	if(strcmp(stringX, strX) == 0)
-	  printf("Test 2 passed: dealloc and realloc worked\n");
-	else
-	  printf("Test 2 failed: X: %d\n", strcmp(stringX, strX));
-
-	/*** test 3 ***/
-	
-	char stringY[512], stringZ[512];
-	for(int i = 0; i < 511; i++)
-	{
-		stringY[i] = 'y';
-		stringZ[i] = 'z';
-	}
-	stringY[511] = stringZ[511] = '\0';
-
-	dealloc(strB);
-
-	char *strY = alloc(512);
-	char *strZ = alloc(512);
-	
-	for(int i = 0; i < 511; i++)
-	{
-		strY[i] = 'y';
-		strZ[i] = 'z';
-	}
-	strY[511] = strZ[511] = '\0';
-
-	if(strcmp(stringY, strY) == 0 && strcmp(stringZ, strZ) == 0)
-	  printf("Test 3 passed: dealloc and smaller realloc worked\n");
-	else
-	  printf("Test 3 failed: Y: %d, Z: %d\n", strcmp(stringY, strY), strcmp(stringZ, strZ));
-
 
 	// merge checks
 	//test 4: free 2x512, allocate 1024
-	dealloc(strZ);
-	dealloc(strY);
-	strY=alloc(1024);
+	dealloc(strB);
+	dealloc(strD);
+	char *strX = alloc(1024);
 	for(int i = 0; i < 1023; i++)
 	{
-		strY[i] = 'x';
+		strX[i] = 'b';
 	}
-	strY[1023] = '\0';
+	strX[1023] = '\0';
 
-	if(strcmp(stringX, strY) == 0)
+	if(strcmp(stringB, strX) == 0)
 	  printf("Test 4 passed: merge worked\n");
 	else
-	  printf("Test 4 failed: X: %d\n", strcmp(stringX, strX));
+	  printf("Test 4 failed: X: %d\n", strcmp(stringB, strX));
 
-	dealloc(strD);
-	dealloc(strY);
+	dealloc(strX);
 	
-	strY = alloc(2048);
+	char *strY = alloc(2048);
 	if(strY == NULL)
 		printf("Mapping Test passed\n");
 	else
 		printf("Mapping Test failed\n");
 
-	dealloc(strX);
+	dealloc(strC);
 	strX = alloc(3072);
 	char  stringM[3072];
 	for (int i=0;i<3071;i++){
