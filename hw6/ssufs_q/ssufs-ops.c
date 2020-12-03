@@ -15,16 +15,15 @@ int ssufs_create(char *filename){
 	/* 1 */
 	int i_num;
 	struct inode_t *inode = (struct inode_t *)malloc(sizeof(struct inode_t));
-	//해당 파일이 존재하면 return -1;
+	//해당 파일이 이미 존재하면 return -1;
 	if(open_namei(filename) != -1)
 		return -1;
 	i_num = ssufs_allocInode();
-	//printf("create return %d\n", i_num);
-	//printf("status : %d, name : %s, size : %d\n", inode->status, inode->name, inode->file_size);
+	if(i_num == -1)
+		return -1;
+	//inode를 읽어와서 상태 변경후 써줌
 	ssufs_readInode(i_num, inode);
-	//inode의 상태를 사용중으로 바꿈
 	inode->status = INODE_IN_USE;
-	//해당 inode의 이름을 저장해줌
 	strcpy(inode->name, filename);
 	ssufs_writeInode(i_num, inode);
 	free(inode);
@@ -34,17 +33,29 @@ int ssufs_create(char *filename){
 
 void ssufs_delete(char *filename){
 	/* 2 */
-	int i_num;
-	struct inode_t *inode = (struct inode_t *)malloc(sizeof(struct inode_t));
+	int f_inode;
+	char *buf = (char*)malloc(sizeof(char)*(BLOCKSIZE));
+	struct inode_t *tmp = (struct inode_t *)malloc(sizeof(struct inode_t));
 	
 	//해당 파일의 inode num을 찾아서 리턴
-	i_num = open_namei(filename);
-
+	f_inode = open_namei(filename);
 	//삭제를 요청한 파일이 없으면 종료
-	if(i_num == -1)
+	if(f_inode == -1)
 		return;
-	ssufs_freeInode(i_num);
-	free(inode);
+	//삭제할 파일의 inode 정보를 읽어옴
+	ssufs_readInode(f_inode, tmp);
+	for(int i = 0 ; i<MAX_FILE_SIZE; i++){
+		//사용했던 데이터 블럭을 지워줌
+		if(tmp->direct_blocks[i] != -1){
+			ssufs_readDataBlock(tmp->direct_blocks[i], buf);
+			memset(buf, 0, sizeof(buf));
+			ssufs_writeDataBlock(tmp->direct_blocks[i], buf);
+		}
+	}
+	//해당 inode 해제
+	ssufs_freeInode(f_inode);
+	free(tmp);
+	free(buf);
 }
 
 int ssufs_open(char *filename){
@@ -55,14 +66,14 @@ int ssufs_open(char *filename){
 	i_num = open_namei(filename);
 	//현재 사용가능한 filehandler의 인덱스를 받아옴
 	handler_num = ssufs_allocFileHandle();
-	//에러처리
+	//해당하는 파일이 없거나 fileHadnler를 할당받지 못했을때 -1 리턴
 	if(i_num == -1 || handler_num == -1){
 		return -1;
 	}
+	//file_handler 정보 업데이트
 	file_handle_array[handler_num].offset = 0;
-	//filehandler에 inode number 저장
 	file_handle_array[handler_num].inode_number = i_num;
-	//printf("inode : %d, file handler : %d\n", i_num, handler_num);
+
 	return handler_num;
 }
 
@@ -73,126 +84,113 @@ void ssufs_close(int file_handle){
 
 int ssufs_read(int file_handle, char *buf, int nbytes){
 	/* 4 */
-	int d;
+	int f_offset = file_handle_array[file_handle].offset;
+	int f_inode = file_handle_array[file_handle].inode_number;
+	int curr =0;
+	int consume = nbytes;
+
 	struct inode_t *tmp = (struct inode_t *) malloc(sizeof(struct inode_t));
-	ssufs_readInode(file_handle_array[file_handle].inode_number, tmp);
-
-	if(file_handle_array[file_handle].offset + nbytes > tmp->file_size)
-		return -1;
-	if(file_handle_array[file_handle].offset % BLOCKSIZE != 0 )
-		d = file_handle_array[file_handle].offset / BLOCKSIZE;
-	else if(file_handle_array[file_handle].offset / BLOCKSIZE >0)
-		d = file_handle_array[file_handle].offset / BLOCKSIZE -1;
-	else
-		d = file_handle_array[file_handle].offset / BLOCKSIZE;
-	printf("d : %d\n", d);
-
-	for(int i=d; i<MAX_FILE_SIZE; i++){
-		if(tmp->direct_blocks[i] != -1){
-			//printf("direct_blocks(read) : %d\n", tmp->direct_blocks[i]);
-			ssufs_readDataBlock(tmp->direct_blocks[i], buf);
-		}	
-	}
-	return 1;
+	ssufs_readInode(f_inode, tmp);
 	
+	if(f_offset + nbytes > tmp->file_size)
+		return -1;
+
+	char tmp_buf[BLOCKSIZE];
+	for(int i=0; i<MAX_FILE_SIZE; i++){
+		if( 0 <= f_offset && f_offset < BLOCKSIZE){
+			ssufs_readDataBlock(tmp->direct_blocks[i], tmp_buf);
+			while(f_offset < BLOCKSIZE){
+				buf[curr++] = tmp_buf[f_offset++];
+				consume--;
+				if(consume == 0){
+					buf[curr] = 0;
+					ssufs_lseek(file_handle, nbytes);
+					free(tmp);
+					return 0;
+				}
+			}
+			//offset 초기화 해버림
+			f_offset =0;
+		}
+		if(f_offset != 0)
+			f_offset-=BLOCKSIZE;
+
+	}
+	//여기까지 내려오면 뭔가 잘못된거임
+	free(tmp);
+	return -1;
 }
 
 int ssufs_write(int file_handle, char *buf, int nbytes){
 	/* 5 */
-	int offset = file_handle_array[file_handle].offset;
-	int curr = offset;
-	int i_num = file_handle_array[file_handle].inode_number;
-	//1개 데이터 블럭당 64byte 
-	int buf_size =0;
-	//offset 위치한 인덱스를 찾기 위해 선언
-	int start_index;
-	//write도중 오류가 있을때 되돌리기 위해 임시 저장 배열
-	int tmp_dalloc[MAX_FILE_SIZE];
-	//임시 저장 배열 초기화
-	memset(tmp_dalloc, -1, sizeof(tmp_dalloc));
-	//inode구조체 선언
 	struct inode_t *tmp = (struct inode_t *) malloc(sizeof(struct inode_t));
-	//file handler에 저장된 inode 번호에 해당하는 inode 정보를 받아온다.
-	ssufs_readInode(i_num, tmp);
-	int limit = BLOCKSIZE*MAX_FILE_SIZE;
-	//파일이 가질 수 있는 최대 크기를 넘으면 -1 반환
-	if( tmp->file_size+ nbytes > limit || (offset + nbytes) > limit )
+	int f_offset = file_handle_array[file_handle].offset;
+	int f_inode = file_handle_array[file_handle].inode_number;
+	int curr =0;
+	char *tmp_buf = (char*)malloc(sizeof(char)*(BLOCKSIZE));
+	char *rollback = (char*)malloc(sizeof(char)*(BLOCKSIZE));
+	int rollback_index;
+	int isUsed[MAX_FILE_SIZE]= {-1, -1, -1, -1};
+
+	ssufs_readInode(f_inode, tmp);
+	//예외처리
+	if((tmp->file_size + nbytes) > MAX_FILE_SIZE*BLOCKSIZE)
 		return -1;
-	
-	//시작 인덱스 지정
+
 	for(int i=0; i<MAX_FILE_SIZE; i++){
-		if(offset >= (i*64) && offset < ((i+1)*BLOCKSIZE)){
-			start_index = i;
-			break;
-		}
-		curr -= BLOCKSIZE;
-	}
+		if( 0 <= f_offset && f_offset < BLOCKSIZE){
+			if(tmp->direct_blocks[i] == -1){
 
-	//buffer preprocess
-	int n = (curr + nbytes)/BLOCKSIZE;
-	char tmp_buf[n][BLOCKSIZE];
-	int write = nbytes;
-
-	if(curr != 0){
-		ssufs_readDataBlock(start_index, tmp_buf[start_index]);
-		int j = 0;
-		int block = start_index;
-		
-			for(int i =curr; i<BLOCKSIZE; i++){
-				tmp_buf[block][i] = buf[j++];
-				write--;
-			}
-			curr = 0;
-			block++;
-		
-		/*for(int i = start_index; i<MAX_FILE_SIZE; i++){
-			printf("string : %s\n",tmp_buf[i] );
-		}*/
-	}else{
-
-	}
-	
-
-	printf("start index : %d, offest : %d\n", start_index, curr);
-	//buffer preprocessing
-	/*int n = nbytes/BLOCKSIZE;
-	if(nbytes % BLOCKSIZE != 0)
-		n++;
-	char tmp_buf[n][BLOCKSIZE];
-	
-	for(int i=0; i<n; i++){
-		for(int j=i*BLOCKSIZE; j<BLOCKSIZE; j++){
-			tmp_buf[i][j] = buf[j];
-		}
-	}
-	*/
-
-	for(int j=start_index; j<MAX_FILE_SIZE; j++){
-		if(buf_size>=nbytes)
-			break;
-		if(tmp->direct_blocks[j] == -1){
-			tmp_dalloc[j] = ssufs_allocDataBlock();
-			tmp->direct_blocks[j] = tmp_dalloc[j];
-			if(tmp_dalloc[j] == -1){
-				for(int k=0; k<MAX_FILE_SIZE; k++){
-					if(tmp->direct_blocks[k] != -1)
-						tmp->direct_blocks[k] = -1;
+				tmp->direct_blocks[i] = ssufs_allocDataBlock();
+				if(tmp->direct_blocks[i] == -1){
+					for(int j=0; j<MAX_FILE_SIZE; j++){
+						if(isUsed[j] == 1){
+							if(j == rollback_index)
+								ssufs_writeDataBlock(tmp->direct_blocks[j], rollback);
+							else{
+								ssufs_writeDataBlock(tmp->direct_blocks[j], tmp_buf);
+								ssufs_freeDataBlock(tmp->direct_blocks[j]);
+							}
+						}
+					}
+					free(rollback);
+					free(tmp_buf);
+					free(tmp);
+					return -1;
 				}
-				return -1;
 			}
+			//블럭 중간부터 write를 해야할때 해당 블럭을 읽어온다.
+			if(f_offset != 0){
+				ssufs_readDataBlock(tmp->direct_blocks[i], tmp_buf);
+				//rollback을 대비하여 정보 저장
+				strcpy(rollback , tmp_buf);
+				rollback_index = i;
+			}
+			while(f_offset < BLOCKSIZE){
+				tmp_buf[f_offset++] = buf[curr++];
+				if(curr  == nbytes){
+					ssufs_writeDataBlock(tmp->direct_blocks[i], tmp_buf);
+					tmp->file_size += nbytes;
+					ssufs_writeInode(f_inode, tmp);
+					ssufs_lseek(file_handle, nbytes);
+					free(tmp_buf);
+					free(tmp);
+					return 0;
+				}
+			}
+			//offset 초기화 해버림
+			ssufs_writeDataBlock(tmp->direct_blocks[i], tmp_buf);
+			f_offset =0;
+			isUsed[i] = 1;
+			memset(tmp_buf, 0, BLOCKSIZE);
 		}
-		//printf("direct block(write) : %d\n", tmp->direct_blocks[j]);
-		//offset - start_index*BLOCKSIZE;
-		//printf("index : %d, offest : %d\n", j, pos);
-		int adr = tmp->direct_blocks[j] + curr;
-		ssufs_writeDataBlock(adr, buf);
-		buf_size+=BLOCKSIZE;
+		if(f_offset != 0)
+			f_offset-=BLOCKSIZE;
 	}
-	tmp->file_size += nbytes;
-	ssufs_writeInode(file_handle_array[file_handle].inode_number, tmp);
-	ssufs_lseek(file_handle, nbytes);
+	free(tmp_buf);
+	free(rollback);
 	free(tmp);
-	return 0;
+	return -1;
 }
 
 int ssufs_lseek(int file_handle, int nseek){

@@ -72,6 +72,7 @@ int main()
 		printf("Test(read) 2 Passed!\n");
 	else
 		printf("Test(read) 2 Failed..\n");
+
 	if(ssufs_write(fd2, st, 10) < 0)
 		printf("Test(write) 2 Passed!\n");
 	else
@@ -101,6 +102,7 @@ int main()
 		printf("Test 3 Failed!\n");
 	printf("\n\n");
 
+
 	/* DataBlock 공간 부족시 에러 처리하고 롤백되는지 검사 */
 	printf("#Test Case 4\n");
 	int fd_A, fd_B, std = 10;
@@ -128,8 +130,8 @@ int main()
 	system("diff tmp1 tmp2");
 	printf("--------------------------------------------------------------------------------\n");
 	// dump 확인을 하려면 unlink 함수 주석처리 후 tmp파일 확인
-	unlink("tmp1");
-	unlink("tmp2");
+	//unlink("tmp1");
+	//unlink("tmp2");
 
 	// 디스크 정리
 	for(int i = 0; i < 8; i++) {
@@ -157,6 +159,15 @@ int main()
 			nums[j] = i + '0';
 		ssufs_write(fds[i], nums, 20);
 	}
+
+	/*
+	char sss[20];
+	for(int i=0; i<8; i++){
+		ssufs_lseek(fds[i], -20);
+		ssufs_read(fds[i], sss, 20);
+		printf("check : %s\n", sss);
+	}
+	*/
 	ssufs_dump();
 	ssufs_delete(filename);
 	ssufs_dump();
