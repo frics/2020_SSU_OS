@@ -142,7 +142,6 @@ int main(int argc, char *argv[])
 	//create master producer threads
 	master_thread_id = (int *)malloc(sizeof(int) * num_masters);
 	master_thread = (pthread_t *)malloc(sizeof(pthread_t) * num_masters);
-
 	for (i = 0; i < num_masters; i++)
 		master_thread_id[i] = i;
 
@@ -177,7 +176,13 @@ int main(int argc, char *argv[])
 	pthread_mutex_destroy(&mutex);
 	pthread_cond_destroy(&produce);
 	pthread_cond_destroy(&consume);
-//	free(buffer);
+	free(buffer);
+	// memset(master_thread_id, 0, sizeof(master_thread_id));
+	free(master_thread_id);
+
+	// memset(worker_thread_id, 0, sizeof(master_thread_id));
+	free(worker_thread_id);
+	
 	free(master_thread);
 	free(worker_thread);
 
