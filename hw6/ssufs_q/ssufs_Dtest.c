@@ -159,6 +159,15 @@ int main()
 			nums[j] = i + '0';
 		ssufs_write(fds[i], nums, 20);
 	}
+
+	
+	char sss[20];
+	for(int i=0; i<8; i++){
+		ssufs_lseek(fds[i], -20);
+		ssufs_read(fds[i], sss, 20);
+		printf("check : %s\n", sss);
+	}
+	
 	ssufs_dump();
 	ssufs_delete(filename);
 	ssufs_dump();
