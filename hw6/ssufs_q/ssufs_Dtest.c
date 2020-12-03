@@ -39,11 +39,11 @@ int main()
 		return 1;
 	}
 	// 모든 리턴값이 0이면 성공
-	printf("Write Data: %d\n", ssufs_write(fd1, st, 10));
-	printf("Write Data: %d\n", ssufs_write(fd1, str, 30));
-	printf("Write Data: %d\n", ssufs_write(fd1, str, 30));
-	printf("Write Data: %d\n", ssufs_write(fd1, stri, 100));
-	printf("Write Data: %d\n", ssufs_write(fd1, str, 30));
+	printf("Write Data 1 : %d\n", ssufs_write(fd1, st, 10));
+	printf("Write Data 2 : %d\n", ssufs_write(fd1, str, 30));
+	printf("Write Data 3 : %d\n", ssufs_write(fd1, str, 30));
+	printf("Write Data 4 : %d\n", ssufs_write(fd1, stri, 100));
+	printf("Write Data 5 : %d\n", ssufs_write(fd1, str, 30));
 	ssufs_lseek(fd1, -200);
 	printf("Read Data: %d\n", ssufs_read(fd1, str2, 200)); // 10-30-30-100-30(200bytes)
 	printf("DATA : %s\n", str2); // 10-30-30-50-50-30 순서로 출력 시 성공

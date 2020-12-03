@@ -217,6 +217,7 @@ void ssufs_readDataBlock(int blocknum, char *buf)
 	/*
 		buf 배열에 blocknum에 해당하는 DataBlock의 데이터를 읽어온다.
 	*/
+	//printf("blocknum : %d\n", blocknum);
 	assert(blocknum < NUM_DATA_BLOCKS);
 
 	char tempBuf[BLOCKSIZE];
@@ -224,7 +225,7 @@ void ssufs_readDataBlock(int blocknum, char *buf)
 	lseek(DISK_FD, BLOCKSIZE * (5 + blocknum), SEEK_SET);
 
 	int ret = read(DISK_FD, tempBuf, BLOCKSIZE);
-
+	
 	assert(ret == BLOCKSIZE);
 	
 	memcpy(buf, tempBuf, BLOCKSIZE);

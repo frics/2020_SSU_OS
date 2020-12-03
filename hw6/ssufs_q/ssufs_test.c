@@ -2,6 +2,7 @@
 
 int main()
 {
+    char tmp[100];
     char str[] = "!-------32 Bytes of Data-------!!-------32 Bytes of Data-------!";
     ssufs_formatDisk();
 
@@ -9,6 +10,10 @@ int main()
     int fd1 = ssufs_open("f1.txt");
 
     printf("Write Data: %d\n", ssufs_write(fd1, str, BLOCKSIZE));
+   
+   // printf("Seek: %d\n", ssufs_lseek(fd1, 0));
+    //printf("read : %d\n", ssufs_read(fd1, tmp, 0));
+
     printf("Seek: %d\n", ssufs_lseek(fd1, 0));
     ssufs_dump();
     ssufs_delete("f1.txt");
