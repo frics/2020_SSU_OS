@@ -1,11 +1,3 @@
-curr : 256, nbyte : 256
-curr : 256, nbyte : 256
-curr : 256, nbyte : 256
-curr : 256, nbyte : 256
-curr : 256, nbyte : 256
-curr : 256, nbyte : 256
-curr : 256, nbyte : 256
-curr : 64, nbyte : 64
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<DISK STATE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 DISK NAME: ssufs
 INODE FREELIST:      1 1 1 1 1 1 1 1 

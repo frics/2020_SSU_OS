@@ -95,6 +95,9 @@ int main()
 			return 1;
 		}
 	}
+	char hihi[64];
+	printf("READ : %d\n", ssufs_read(fds[0], hihi, 0));
+	printf("check : [%s]\n\n\n", hihi);
 	ssufs_dump();
 	if(ssufs_create("error.txt") < 0) 
 		printf("Test 3 Passed!\n");
